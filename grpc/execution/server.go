@@ -39,10 +39,10 @@ func (s *ExecutionServiceServer) DoBlock(ctx context.Context, req *executionv1.D
 
 	// TODO - need to call consensus api to build a block
 
-	txs := bytesToTransactions(req.Transactions)
-	for _, tx := range txs {
-		s.Backend.SendTx(ctx, tx)
-	}
+	// txs := bytesToTransactions(req.Transactions)
+	// for _, tx := range txs {
+	// 	s.Backend.SendTx(ctx, tx)
+	// }
 
 	res := &executionv1.DoBlockResponse{
 		// TODO - get state root from last block
