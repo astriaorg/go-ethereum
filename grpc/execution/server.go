@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	executionv1 "github.com/ethereum/go-ethereum/grpc/gen/proto/execution/v1"
 	"github.com/ethereum/go-ethereum/internal/ethapi"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // executionServiceServer is the implementation of the ExecutionServiceServer interface.
@@ -32,7 +33,7 @@ type ExecutionServiceServer struct {
 // GetHeadHash() to get the head hash of the forkchoice
 
 func (s *ExecutionServiceServer) DoBlock(ctx context.Context, req *executionv1.DoBlockRequest) (*executionv1.DoBlockResponse, error) {
-	print("DoBlock called")
+	log.Info("DoBlock called request", "request", req)
 
 	// NOTE - Request.Header.ParentHash needs to match forkchoice head hash
 	// ParentHash should be the forkchoice head of the last block
