@@ -64,6 +64,9 @@ type Node struct {
 	ipc           *ipcServer  // Stores information about the ipc http server
 	inprocHandler *rpc.Server // In-process RPC request handler to process the API requests
 
+	// grpc
+	grpcServerHandler *GRPCServerHandler // Stores information about the grpc server
+
 	databases map[*closeTrackingDB]struct{} // All open databases
 }
 
@@ -273,6 +276,11 @@ func (n *Node) openEndpoints() error {
 	if err != nil {
 		n.stopRPC()
 		n.server.Stop()
+	}
+	// start GRPC endpoints
+	err = n.startGRPC()
+	if err != nil {
+		n.stopGRPC()
 	}
 	return err
 }
@@ -521,6 +529,21 @@ func (n *Node) stopRPC() {
 	n.stopInProc()
 }
 
+func (n *Node) startGRPC() error {
+	if n.config.GRPCHost != "" {
+		// start the server
+		if err := n.grpcServerHandler.Start(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (n *Node) stopGRPC() {
+	n.grpcServerHandler.Stop()
+}
+
 // startInProc registers all RPC APIs on the inproc server.
 func (n *Node) startInProc(apis []rpc.API) error {
 	for _, api := range apis {
@@ -586,6 +609,19 @@ func (n *Node) getAPIs() (unauthenticated, all []rpc.API) {
 		}
 	}
 	return unauthenticated, n.rpcAPIs
+}
+
+// RegisterGRPCServer registers a gRPC server on the node.
+// This allows us to control grpc server startup and shutdown from the node.
+func (n *Node) RegisterGRPCServer(handler *GRPCServerHandler) {
+	n.lock.Lock()
+	defer n.lock.Unlock()
+
+	if n.state != initializingState {
+		panic("can't register gRPC server on running/stopped node")
+	}
+
+	n.grpcServerHandler = handler
 }
 
 // RegisterHandler mounts a handler on the given path on the canonical HTTP server.
@@ -665,6 +701,11 @@ func (n *Node) IPCEndpoint() string {
 // contain the JSON-RPC path prefix set by HTTPPathPrefix.
 func (n *Node) HTTPEndpoint() string {
 	return "http://" + n.http.listenAddr()
+}
+
+// GRPCENDPOINT returns the URL of the GRPC server.
+func (n *Node) GRPCEndpoint() string {
+	return "http://" + n.grpcServerHandler.endpoint
 }
 
 // WSEndpoint returns the current JSON-RPC over WebSocket endpoint.
