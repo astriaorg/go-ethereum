@@ -11,5 +11,5 @@ make geth
 # TODO - run beacon?
 
 # run geth
-./build/bin/geth --http.api eth,web3,net,txpool --ws --ws.api eth,web3,net,txpool --grpc --grpc.addr="https://[::1]" --grpc.port 50051
+./build/bin/geth --grpc --grpc.addr "[::1]" --grpc.port 50051
 ```
