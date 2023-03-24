@@ -2,6 +2,7 @@ package node
 
 import (
 	"net"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/grpc/execution"
 	executionv1 "github.com/ethereum/go-ethereum/grpc/gen/proto/execution/v1"
@@ -13,6 +14,8 @@ import (
 // GRPCServerHandler is the gRPC server handler.
 // It gives us a way to attach the gRPC server to the node so it can be stopped on shutdown.
 type GRPCServerHandler struct {
+	mu sync.Mutex
+
 	endpoint               string
 	server                 *grpc.Server
 	executionServiceServer *execution.ExecutionServiceServer
@@ -44,6 +47,9 @@ func NewGRPCServerHandler(node *Node, backend ethapi.Backend, cfg *Config) error
 
 // Start starts the gRPC server if it is enabled.
 func (handler *GRPCServerHandler) Start() error {
+	handler.mu.Lock()
+	defer handler.mu.Unlock()
+
 	if handler.endpoint == "" {
 		return nil
 	}
@@ -60,6 +66,9 @@ func (handler *GRPCServerHandler) Start() error {
 
 // Stop stops the gRPC server.
 func (handler *GRPCServerHandler) Stop() error {
+	handler.mu.Lock()
+	defer handler.mu.Unlock()
+
 	handler.server.Stop()
 	log.Info("gRPC server stopped", "endpoint", handler.endpoint)
 	return nil
