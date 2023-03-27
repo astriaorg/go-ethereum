@@ -174,7 +174,7 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 
 	// Configure gRPC if requested.
 	if ctx.IsSet(utils.GRPCEnabledFlag.Name) {
-		utils.RegisterGRPCService(stack, backend, &cfg.Node)
+		utils.RegisterGRPCService(stack, eth, &cfg.Node)
 	}
 
 	// Add the Ethereum Stats daemon if requested.

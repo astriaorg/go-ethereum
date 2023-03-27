@@ -2066,8 +2066,8 @@ func RegisterGraphQLService(stack *node.Node, backend ethapi.Backend, filterSyst
 
 // RegisterGRPCService adds the gRPC API to the node.
 // It was done this way so that our grpc execution server can access the ethapi.Backend
-func RegisterGRPCService(stack *node.Node, backend ethapi.Backend, cfg *node.Config) {
-	if err := node.NewGRPCServerHandler(stack, backend, cfg); err != nil {
+func RegisterGRPCService(stack *node.Node, eth *eth.Ethereum, cfg *node.Config) {
+	if err := node.NewGRPCServerHandler(stack, eth, cfg); err != nil {
 		Fatalf("Failed to register the gRPC service: %v", err)
 	}
 }

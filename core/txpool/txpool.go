@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/prque"
 	"github.com/ethereum/go-ethereum/consensus/misc"
 	"github.com/ethereum/go-ethereum/core"
@@ -928,8 +927,8 @@ func (pool *TxPool) AddLocal(tx *types.Transaction) error {
 	return errs[0]
 }
 
-func (pool *TxPool) SetAstriaOrdered(rawTxs []hexutil.Bytes) {
-	txs := &types.Transactions{}
+func (pool *TxPool) SetAstriaOrdered(rawTxs [][]byte) {
+	txs := *&types.Transactions{}
 	for idx, rawTx := range rawTxs {
 		tx := new(types.Transaction)
 		err := tx.UnmarshalBinary(rawTx);
@@ -940,7 +939,7 @@ func (pool *TxPool) SetAstriaOrdered(rawTxs []hexutil.Bytes) {
 
 		err = pool.astriaValidate(tx)
 		if err != nil {
-			log.Info("Astria tx failed validation at index", idx, "failed validation:" err)
+			log.Info("Astria tx failed validation at index", idx, "failed validation:", err)
 			continue
 		}
 

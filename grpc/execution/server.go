@@ -7,7 +7,9 @@ package execution
 import (
 	"context"
 
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/beacon/engine"
+	"github.com/ethereum/go-ethereum/eth"
+	"github.com/ethereum/go-ethereum/eth/catalyst"
 	executionv1 "github.com/ethereum/go-ethereum/grpc/gen/proto/execution/v1"
 	"github.com/ethereum/go-ethereum/internal/ethapi"
 	"github.com/ethereum/go-ethereum/log"
@@ -20,13 +22,17 @@ type ExecutionServiceServer struct {
 	// for forward compatibility
 	executionv1.UnimplementedExecutionServiceServer
 
-	// TODO - will need access to the consensus api to call functions for building a block
-	// e.g. getPayload, newPayload, forkchoiceUpdated
+	consensus *catalyst.ConsensusAPI
+	eth       *eth.Ethereum
+}
 
-	Backend ethapi.Backend
+func NewExecutionServiceServer(backend ethapi.Backend, eth *eth.Ethereum) *ExecutionServiceServer {
+	consensus := catalyst.NewConsensusAPI(eth)
 
-	// TODO - will need access to forkchoice on first run.
-	// this will probably be passed in when calling NewServer
+	return &ExecutionServiceServer{
+		eth:       eth,
+		consensus: consensus,
+	}
 }
 
 // FIXME - how do we know which hash to start with? will probably need another api function like
@@ -35,30 +41,36 @@ type ExecutionServiceServer struct {
 func (s *ExecutionServiceServer) DoBlock(ctx context.Context, req *executionv1.DoBlockRequest) (*executionv1.DoBlockResponse, error) {
 	log.Info("DoBlock called request", "request", req)
 
-	// NOTE - Request.Header.ParentHash needs to match forkchoice head hash
-	// ParentHash should be the forkchoice head of the last block
+	// The Engine API has been modified to use transactions from this mempool and abide by it's ordering.
+	s.eth.TxPool().SetAstriaOrdered(req.Transactions)
 
-	// TODO - need to call consensus api to build a block
-
-	// txs := bytesToTransactions(req.Transactions)
-	// for _, tx := range txs {
-	// 	s.Backend.SendTx(ctx, tx)
-	// }
+	// Do the whole Engine API in a single loop
+	startForkChoice := &engine.ForkchoiceStateV1{}
+	payloadAttributes := &engine.PayloadAttributes{}
+	fcStartResp, err := s.consensus.ForkchoiceUpdatedV1(*startForkChoice, payloadAttributes)
+	if err != nil {
+		return nil, err
+	}
+	payloadResp, err := s.consensus.GetPayloadV1(*fcStartResp.PayloadID)
+	if err != nil {
+		return nil, err
+	}
+	payloadStatus, err := s.consensus.NewPayloadV1(*payloadResp)
+	if err != nil {
+		return nil, err
+	}
+	newForkChoice := &engine.ForkchoiceStateV1{
+		HeadBlockHash:      *payloadStatus.LatestValidHash,
+		SafeBlockHash:      *payloadStatus.LatestValidHash,
+		FinalizedBlockHash: *payloadStatus.LatestValidHash,
+	}
+	fcEndResp, err := s.consensus.ForkchoiceUpdatedV1(*newForkChoice, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	res := &executionv1.DoBlockResponse{
-		// TODO - get state root from last block
-		StateRoot: []byte{0x00},
+		StateRoot: fcEndResp.PayloadStatus.LatestValidHash.Bytes(),
 	}
 	return res, nil
-}
-
-// convert bytes to transactions
-func bytesToTransactions(b [][]byte) []*types.Transaction {
-	txs := []*types.Transaction{}
-	for _, txBytes := range b {
-		tx := &types.Transaction{}
-		tx.UnmarshalBinary(txBytes)
-		txs = append(txs, tx)
-	}
-	return txs
 }
