@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/eth/catalyst"
 	executionv1 "github.com/ethereum/go-ethereum/grpc/gen/proto/execution/v1"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
 	"github.com/ethereum/go-ethereum/log"
 )
 
@@ -26,7 +25,7 @@ type ExecutionServiceServer struct {
 	eth       *eth.Ethereum
 }
 
-func NewExecutionServiceServer(backend ethapi.Backend, eth *eth.Ethereum) *ExecutionServiceServer {
+func NewExecutionServiceServer(eth *eth.Ethereum) *ExecutionServiceServer {
 	consensus := catalyst.NewConsensusAPI(eth)
 
 	return &ExecutionServiceServer{
