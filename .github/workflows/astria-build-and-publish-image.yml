@@ -15,7 +15,7 @@ jobs:
       - run: go version
 
       - name: Log in to registry
-      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
 
       # TODO - build for amd64 and arm64?
       - name: Build and Publish latest Docker image
