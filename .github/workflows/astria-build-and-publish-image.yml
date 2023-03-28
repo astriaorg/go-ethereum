@@ -1,9 +1,9 @@
 name: Build and Publish Docker image
 on:
+  workflow_dispatch:
   push:
     branches:
       - astria # Running this job only for astria branch
-
 jobs:
   build-and-publish-latest:
     runs-on: ubuntu-latest
