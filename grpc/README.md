@@ -1,12 +1,19 @@
 This package provides a gRPC server as an entrypoint to the EVM.
 
-## Build and run from source:
+
+
+Helpful commands (MacOS):
 ```bash
 # install necessary dependencies
 brew install leveldb
 
 # build geth
 make geth
+
+# generating protobuf files
+buf generate buf.build/astria/execution-apis
+
+# TODO - run beacon?
 
 # run geth
 ./build/bin/geth --goerli --grpc --grpc.addr "0.0.0.0" --grpc.port 50051

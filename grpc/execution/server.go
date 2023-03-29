@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/eth/catalyst"
 	executionv1 "github.com/ethereum/go-ethereum/grpc/gen/proto/execution/v1"
@@ -34,18 +35,24 @@ func NewExecutionServiceServer(eth *eth.Ethereum) *ExecutionServiceServer {
 	}
 }
 
-// FIXME - how do we know which hash to start with? will probably need another api function like
-// GetHeadHash() to get the head hash of the forkchoice
-
 func (s *ExecutionServiceServer) DoBlock(ctx context.Context, req *executionv1.DoBlockRequest) (*executionv1.DoBlockResponse, error) {
 	log.Info("DoBlock called request", "request", req)
+	prevHeadHash := common.BytesToHash(req.PrevStateRoot)
 
 	// The Engine API has been modified to use transactions from this mempool and abide by it's ordering.
 	s.eth.TxPool().SetAstriaOrdered(req.Transactions)
 
 	// Do the whole Engine API in a single loop
-	startForkChoice := &engine.ForkchoiceStateV1{}
-	payloadAttributes := &engine.PayloadAttributes{}
+	startForkChoice := &engine.ForkchoiceStateV1{
+		HeadBlockHash:      prevHeadHash,
+		SafeBlockHash:      prevHeadHash,
+		FinalizedBlockHash: prevHeadHash,
+	}
+	payloadAttributes := &engine.PayloadAttributes{
+		Timestamp: uint64(req.GetTimestamp().GetSeconds()),
+		Random: common.Hash{},
+		SuggestedFeeRecipient: common.Address{},
+	}
 	fcStartResp, err := s.consensus.ForkchoiceUpdatedV1(*startForkChoice, payloadAttributes)
 	if err != nil {
 		return nil, err
@@ -71,5 +78,14 @@ func (s *ExecutionServiceServer) DoBlock(ctx context.Context, req *executionv1.D
 	res := &executionv1.DoBlockResponse{
 		StateRoot: fcEndResp.PayloadStatus.LatestValidHash.Bytes(),
 	}
+	return res, nil
+}
+
+func (s *ExecutionServiceServer) InitState(ctx context.Context, req *executionv1.InitStateRequest) (*executionv1.InitStateResponse, error) {
+	currHead := s.eth.BlockChain().CurrentHeader()
+	res := &executionv1.InitStateResponse{
+		StateRoot: currHead.Hash().Bytes(),
+	}
+
 	return res, nil
 }
