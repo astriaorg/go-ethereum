@@ -1157,6 +1157,7 @@ func (w *worker) fillTransactions(interrupt *int32, env *environment) error {
 			return err
 		}
 	}
+	w.eth.TxPool().ClearAstriaOrdered()
 
 	// Original Geth Code
 	if false {

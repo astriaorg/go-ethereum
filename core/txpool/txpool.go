@@ -259,7 +259,7 @@ type TxPool struct {
 	pendingNonces *noncer        // Pending state tracking virtual nonces
 	currentMaxGas uint64         // Current gas limit for transaction caps
 
-	astria *astriaOrdered
+	astria  *astriaOrdered
 	locals  *accountSet // Set of local transaction to exempt from eviction rules
 	journal *journal    // Journal of local transaction to back up to disk
 
@@ -931,7 +931,7 @@ func (pool *TxPool) SetAstriaOrdered(rawTxs [][]byte) {
 	txs := *&types.Transactions{}
 	for idx, rawTx := range rawTxs {
 		tx := new(types.Transaction)
-		err := tx.UnmarshalBinary(rawTx);
+		err := tx.UnmarshalBinary(rawTx)
 		if err != nil {
 			log.Info("Failed to unmarshall raw astria tx bytes", rawTx, "at index", idx)
 			continue
@@ -946,7 +946,11 @@ func (pool *TxPool) SetAstriaOrdered(rawTxs [][]byte) {
 		txs = append(txs, tx)
 	}
 
-	pool.astria.txs = txs
+	pool.astria = newAstriaOrdered(&txs)
+}
+
+func (pool *TxPool) ClearAstriaOrdered() {
+	pool.astria.clear()
 }
 
 func (pool *TxPool) AstriaOrdered() *types.Transactions {
@@ -1741,6 +1745,16 @@ func (a addressesByHeartbeat) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 type astriaOrdered struct {
 	txs types.Transactions
+}
+
+func newAstriaOrdered(txs *types.Transactions) *astriaOrdered {
+	return &astriaOrdered{
+		txs: *txs,
+	}
+}
+
+func (ao *astriaOrdered) clear() {
+	ao.txs = *&types.Transactions{}
 }
 
 // accountSet is simply a set of addresses to check for existence, and a signer
