@@ -1,8 +1,6 @@
 This package provides a gRPC server as an entrypoint to the EVM.
 
-
-
-Helpful commands (MacOS):
+## Build and run from source:
 ```bash
 # install necessary dependencies
 brew install leveldb
