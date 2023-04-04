@@ -2043,7 +2043,6 @@ func RegisterEthService(stack *node.Node, cfg *ethconfig.Config) (ethapi.Backend
 			Fatalf("Failed to create the LES server: %v", err)
 		}
 	}
-	// We don't want to publicly expose the engine API, instead use grpc endpoints
 	// if err := ethcatalyst.Register(stack, backend); err != nil {
 	// 	Fatalf("Failed to register the Engine API service: %v", err)
 	// }

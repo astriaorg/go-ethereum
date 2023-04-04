@@ -17,7 +17,6 @@
 package ethash
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"math/big"
@@ -280,11 +279,11 @@ func (ethash *Ethash) verifyHeader(chain consensus.ChainHeaderReader, header, pa
 		return errOlderBlockTime
 	}
 	// Verify the block's difficulty based on its timestamp and parent's difficulty
-	expected := ethash.CalcDifficulty(chain, header.Time, parent)
+	//expected := ethash.CalcDifficulty(chain, header.Time, parent)
 
-	if expected.Cmp(header.Difficulty) != 0 {
-		return fmt.Errorf("invalid difficulty: have %v, want %v", header.Difficulty, expected)
-	}
+	// if expected.Cmp(header.Difficulty) != 0 {
+	// 	return fmt.Errorf("invalid difficulty: have %v, want %v", header.Difficulty, expected)
+	// }
 	// Verify that the gas limit is <= 2^63-1
 	if header.GasLimit > params.MaxGasLimit {
 		return fmt.Errorf("invalid gasLimit: have %v, max %v", header.GasLimit, params.MaxGasLimit)
@@ -538,21 +537,21 @@ func (ethash *Ethash) verifySeal(chain consensus.ChainHeaderReader, header *type
 		return ethash.shared.verifySeal(chain, header, fulldag)
 	}
 	// Ensure that we have a valid difficulty for the block
-	if header.Difficulty.Sign() <= 0 {
+	if header.Difficulty.Sign() < 0 {
 		return errInvalidDifficulty
 	}
 	// Recompute the digest and PoW values
 	number := header.Number.Uint64()
 
-	var (
-		digest []byte
-		result []byte
-	)
+	// var (
+	// 	digest []byte
+	// 	result []byte
+	// )
 	// If fast-but-heavy PoW verification was requested, use an ethash dataset
 	if fulldag {
 		dataset := ethash.dataset(number, true)
 		if dataset.generated() {
-			digest, result = hashimotoFull(dataset.dataset, ethash.SealHash(header).Bytes(), header.Nonce.Uint64())
+			//digest, result = hashimotoFull(dataset.dataset, ethash.SealHash(header).Bytes(), header.Nonce.Uint64())
 
 			// Datasets are unmapped in a finalizer. Ensure that the dataset stays alive
 			// until after the call to hashimotoFull so it's not unmapped while being used.
@@ -566,24 +565,24 @@ func (ethash *Ethash) verifySeal(chain consensus.ChainHeaderReader, header *type
 	if !fulldag {
 		cache := ethash.cache(number)
 
-		size := datasetSize(number)
-		if ethash.config.PowMode == ModeTest {
-			size = 32 * 1024
-		}
-		digest, result = hashimotoLight(size, cache.cache, ethash.SealHash(header).Bytes(), header.Nonce.Uint64())
+		// size := datasetSize(number)
+		// if ethash.config.PowMode == ModeTest {
+		// 	size = 32 * 1024
+		// }
+		//digest, result = hashimotoLight(size, cache.cache, ethash.SealHash(header).Bytes(), header.Nonce.Uint64())
 
 		// Caches are unmapped in a finalizer. Ensure that the cache stays alive
 		// until after the call to hashimotoLight so it's not unmapped while being used.
 		runtime.KeepAlive(cache)
 	}
 	// Verify the calculated values against the ones provided in the header
-	if !bytes.Equal(header.MixDigest[:], digest) {
-		return errInvalidMixDigest
-	}
-	target := new(big.Int).Div(two256, header.Difficulty)
-	if new(big.Int).SetBytes(result).Cmp(target) > 0 {
-		return errInvalidPoW
-	}
+	// if !bytes.Equal(header.MixDigest[:], digest) {
+	// 	return errInvalidMixDigest
+	// }
+	// target := new(big.Int).Div(two256, header.Difficulty)
+	// if new(big.Int).SetBytes(result).Cmp(target) > 0 {
+	// 	return errInvalidPoW
+	// }
 	return nil
 }
 
@@ -594,7 +593,7 @@ func (ethash *Ethash) Prepare(chain consensus.ChainHeaderReader, header *types.H
 	if parent == nil {
 		return consensus.ErrUnknownAncestor
 	}
-	header.Difficulty = ethash.CalcDifficulty(chain, header.Time, parent)
+	header.Difficulty = common.Big0 //ethash.CalcDifficulty(chain, header.Time, parent)
 	return nil
 }
 
