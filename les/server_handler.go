@@ -27,13 +27,13 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/forkid"
 	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/txpool"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/les/flowcontrol"
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/ethereum/go-ethereum/miner"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
@@ -63,7 +63,7 @@ type serverHandler struct {
 	forkFilter forkid.Filter
 	blockchain *core.BlockChain
 	chainDb    ethdb.Database
-	txpool     *txpool.TxPool
+	txpool     miner.TxPool
 	server     *LesServer
 
 	closeCh chan struct{}  // Channel used to exit all background routines of handler.
@@ -74,7 +74,7 @@ type serverHandler struct {
 	addTxsSync bool
 }
 
-func newServerHandler(server *LesServer, blockchain *core.BlockChain, chainDb ethdb.Database, txpool *txpool.TxPool, synced func() bool) *serverHandler {
+func newServerHandler(server *LesServer, blockchain *core.BlockChain, chainDb ethdb.Database, txpool miner.TxPool, synced func() bool) *serverHandler {
 	handler := &serverHandler{
 		forkFilter: forkid.NewFilter(blockchain),
 		server:     server,
@@ -344,7 +344,7 @@ func (h *serverHandler) BlockChain() *core.BlockChain {
 }
 
 // TxPool implements serverBackend
-func (h *serverHandler) TxPool() *txpool.TxPool {
+func (h *serverHandler) TxPool() miner.TxPool {
 	return h.txpool
 }
 

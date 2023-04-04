@@ -310,6 +310,7 @@ func NewTxPool(config Config, chainconfig *params.ChainConfig, chain blockChain)
 		reorgShutdownCh: make(chan struct{}),
 		initDoneCh:      make(chan struct{}),
 		gasPrice:        new(big.Int).SetUint64(config.PriceLimit),
+		//astriaOrdered:   newAstriaOrdered(),
 	}
 	pool.locals = newAccountSet(pool.signer)
 	for _, addr := range config.Locals {

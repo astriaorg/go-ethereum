@@ -49,8 +49,8 @@ func (s *ExecutionServiceServer) DoBlock(ctx context.Context, req *executionv1.D
 		FinalizedBlockHash: prevHeadHash,
 	}
 	payloadAttributes := &engine.PayloadAttributes{
-		Timestamp: uint64(req.GetTimestamp().GetSeconds()),
-		Random: common.Hash{},
+		Timestamp:             uint64(req.GetTimestamp().GetSeconds()),
+		Random:                common.Hash{},
 		SuggestedFeeRecipient: common.Address{},
 	}
 	fcStartResp, err := s.consensus.ForkchoiceUpdatedV1(*startForkChoice, payloadAttributes)
