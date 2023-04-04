@@ -11,8 +11,6 @@ make geth
 # generating protobuf files
 buf generate buf.build/astria/execution-apis
 
-# TODO - run beacon?
-
 # run geth
 ./build/bin/geth --goerli --grpc --grpc.addr "0.0.0.0" --grpc.port 50051
 ```

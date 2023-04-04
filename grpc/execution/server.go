@@ -66,7 +66,8 @@ func (s *ExecutionServiceServer) DoBlock(ctx context.Context, req *executionv1.D
 	if err != nil {
 		return nil, err
 	}
-	// super janky but this is what the payload builder does :/ (miner.worker.buildPayload())
+
+	// super janky but this is what the payload builder requires :/ (miner.worker.buildPayload())
 	// we should probably just execute + store the block directly instead of using the engine api.
 	time.Sleep(time.Second)
 	payloadResp, err := s.consensus.GetPayloadV1(*fcStartResp.PayloadID)
@@ -75,14 +76,7 @@ func (s *ExecutionServiceServer) DoBlock(ctx context.Context, req *executionv1.D
 		return nil, err
 	}
 
-	// _, err = engine.ExecutableDataToBlock(*payloadResp)
-	// if err != nil {
-	// 	log.Error("failed to call ExecutableDataToBlock", "err", err)
-	// 	return nil, err
-	// }
-
 	// call blockchain.InsertChain to actually execute and write the blocks to state
-	// TODO we might not actually need this since the miner loop should seal and call blockchain.WriteBlockAndSetHead
 	block, err := engine.ExecutableDataToBlock(*payloadResp)
 	if err != nil {
 		return nil, err
@@ -98,16 +92,6 @@ func (s *ExecutionServiceServer) DoBlock(ctx context.Context, req *executionv1.D
 		return nil, fmt.Errorf("failed to insert block into blockchain (n=%d)", n)
 	}
 
-	//payloadStatus := fcStartResp.PayloadStatus
-	// payloadStatus, err := s.consensus.NewPayloadV1(*payloadResp)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// newForkChoice := &engine.ForkchoiceStateV1{
-	// 	HeadBlockHash:      payloadResp.BlockHash,
-	// 	SafeBlockHash:      payloadResp.BlockHash,
-	// 	FinalizedBlockHash: payloadResp.BlockHash,
-	// }
 	newForkChoice := &engine.ForkchoiceStateV1{
 		HeadBlockHash:      block.Hash(),
 		SafeBlockHash:      block.Hash(),
@@ -120,7 +104,7 @@ func (s *ExecutionServiceServer) DoBlock(ctx context.Context, req *executionv1.D
 	}
 
 	res := &executionv1.DoBlockResponse{
-		// RENAME THIS - this is not the state root!! it's the block hash
+		// TODO: RENAME THIS - this is not the state root!! it's the block hash
 		StateRoot: fcEndResp.PayloadStatus.LatestValidHash.Bytes(),
 	}
 	return res, nil
@@ -129,6 +113,7 @@ func (s *ExecutionServiceServer) DoBlock(ctx context.Context, req *executionv1.D
 func (s *ExecutionServiceServer) InitState(ctx context.Context, req *executionv1.InitStateRequest) (*executionv1.InitStateResponse, error) {
 	currHead := s.eth.BlockChain().CurrentHeader()
 	res := &executionv1.InitStateResponse{
+		// TODO: RENAME THIS - this is not the state root!! it's the block hash
 		StateRoot: currHead.Hash().Bytes(),
 	}
 
