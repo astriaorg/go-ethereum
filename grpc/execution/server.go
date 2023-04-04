@@ -6,9 +6,12 @@ package execution
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/eth/catalyst"
 	executionv1 "github.com/ethereum/go-ethereum/grpc/gen/proto/execution/v1"
@@ -24,14 +27,19 @@ type ExecutionServiceServer struct {
 
 	consensus *catalyst.ConsensusAPI
 	eth       *eth.Ethereum
+
+	bc *core.BlockChain
 }
 
 func NewExecutionServiceServer(eth *eth.Ethereum) *ExecutionServiceServer {
 	consensus := catalyst.NewConsensusAPI(eth)
 
+	bc := eth.BlockChain()
+
 	return &ExecutionServiceServer{
 		eth:       eth,
 		consensus: consensus,
+		bc:        bc,
 	}
 }
 
@@ -61,10 +69,11 @@ func (s *ExecutionServiceServer) DoBlock(ctx context.Context, req *executionv1.D
 	if err != nil {
 		return nil, err
 	}
-	payloadStatus, err := s.consensus.NewPayloadV1(*payloadResp)
-	if err != nil {
-		return nil, err
-	}
+	payloadStatus := fcStartResp.PayloadStatus
+	// payloadStatus, err := s.consensus.NewPayloadV1(*payloadResp)
+	// if err != nil {
+	// 	return nil, err
+	// }
 	newForkChoice := &engine.ForkchoiceStateV1{
 		HeadBlockHash:      *payloadStatus.LatestValidHash,
 		SafeBlockHash:      *payloadStatus.LatestValidHash,
@@ -75,7 +84,24 @@ func (s *ExecutionServiceServer) DoBlock(ctx context.Context, req *executionv1.D
 		return nil, err
 	}
 
+	// call blockchain.InsertChain to actually execute and write the blocks to state
+	block, err := engine.ExecutableDataToBlock(*payloadResp)
+	if err != nil {
+		return nil, err
+	}
+	blocks := types.Blocks{
+		block,
+	}
+	n, err := s.bc.InsertChain(blocks)
+	if err != nil {
+		return nil, err
+	}
+	if n != 1 {
+		return nil, fmt.Errorf("failed to insert block into blockchain (n=%d)", n)
+	}
+
 	res := &executionv1.DoBlockResponse{
+		// RENAME THIS - this is not the state root!! it's the block hash
 		StateRoot: fcEndResp.PayloadStatus.LatestValidHash.Bytes(),
 	}
 	return res, nil

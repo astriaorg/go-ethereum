@@ -929,32 +929,39 @@ func (pool *TxPool) AddLocal(tx *types.Transaction) error {
 }
 
 func (pool *TxPool) SetAstriaOrdered(rawTxs [][]byte) {
-	txs := *&types.Transactions{}
+	txs := []*types.Transaction{}
 	for idx, rawTx := range rawTxs {
 		tx := new(types.Transaction)
 		err := tx.UnmarshalBinary(rawTx)
 		if err != nil {
-			log.Info("Failed to unmarshall raw astria tx bytes", rawTx, "at index", idx)
+			log.Warn("failed to unmarshal raw astria tx bytes", rawTx, "at index", idx, "error:", err)
 			continue
 		}
 
 		err = pool.astriaValidate(tx)
 		if err != nil {
-			log.Info("Astria tx failed validation at index", idx, "failed validation:", err)
+			log.Warn("astria tx failed validation at index", idx, "error:", err)
 			continue
 		}
 
 		txs = append(txs, tx)
 	}
 
-	pool.astria = newAstriaOrdered(&txs)
+	pool.astria = newAstriaOrdered(types.Transactions(txs))
 }
 
 func (pool *TxPool) ClearAstriaOrdered() {
+	if pool.astria == nil {
+		return
+	}
 	pool.astria.clear()
 }
 
 func (pool *TxPool) AstriaOrdered() *types.Transactions {
+	// sus but whatever
+	if pool.astria == nil {
+		return &types.Transactions{}
+	}
 	return &pool.astria.txs
 }
 
@@ -1748,9 +1755,9 @@ type astriaOrdered struct {
 	txs types.Transactions
 }
 
-func newAstriaOrdered(txs *types.Transactions) *astriaOrdered {
+func newAstriaOrdered(txs types.Transactions) *astriaOrdered {
 	return &astriaOrdered{
-		txs: *txs,
+		txs: txs,
 	}
 }
 
