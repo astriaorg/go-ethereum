@@ -537,7 +537,7 @@ func (ethash *Ethash) verifySeal(chain consensus.ChainHeaderReader, header *type
 		return ethash.shared.verifySeal(chain, header, fulldag)
 	}
 	// Ensure that we have a valid difficulty for the block
-	if header.Difficulty.Sign() < 0 {
+	if header.Difficulty.Sign() <= 0 {
 		return errInvalidDifficulty
 	}
 	// Recompute the digest and PoW values

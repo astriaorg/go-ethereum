@@ -1158,32 +1158,6 @@ func (w *worker) fillTransactions(interrupt *int32, env *environment) error {
 		}
 	}
 	w.eth.TxPool().ClearAstriaOrdered()
-
-	// Original Geth Code
-	if false {
-		// Split the pending transactions into locals and remotes
-		// Fill the block with all available pending transactions.
-		pending := w.eth.TxPool().Pending(true)
-		localTxs, remoteTxs := make(map[common.Address]types.Transactions), pending
-		for _, account := range w.eth.TxPool().Locals() {
-			if txs := remoteTxs[account]; len(txs) > 0 {
-				delete(remoteTxs, account)
-				localTxs[account] = txs
-			}
-		}
-		if len(localTxs) > 0 {
-			txs := types.NewTransactionsByPriceAndNonce(env.signer, localTxs, env.header.BaseFee)
-			if err := w.commitTransactions(env, txs, interrupt); err != nil {
-				return err
-			}
-		}
-		if len(remoteTxs) > 0 {
-			txs := types.NewTransactionsByPriceAndNonce(env.signer, remoteTxs, env.header.BaseFee)
-			if err := w.commitTransactions(env, txs, interrupt); err != nil {
-				return err
-			}
-		}
-	}
 	return nil
 }
 
