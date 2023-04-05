@@ -36,32 +36,11 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-type TxPool interface {
-	AddRemotes(txs []*types.Transaction) []error
-	AddLocal(tx *types.Transaction) error
-	Pending(enforceTips bool) map[common.Address]types.Transactions
-	Get(hash common.Hash) *types.Transaction
-	Nonce(addr common.Address) uint64
-	Stats() (int, int)
-	SetGasPrice(price *big.Int)
-	Has(hash common.Hash) bool
-	SubscribeNewTxsEvent(ch chan<- core.NewTxsEvent) event.Subscription
-	Stop()
-	Content() (map[common.Address]types.Transactions, map[common.Address]types.Transactions)
-	ContentFrom(addr common.Address) (types.Transactions, types.Transactions)
-	AstriaOrdered() *types.Transactions
-	ClearAstriaOrdered()
-	SetAstriaOrdered(rawTxs [][]byte)
-	AddRemotesSync(txs []*types.Transaction) []error
-	Locals() []common.Address
-	Status(hashes []common.Hash) []txpool.TxStatus
-}
-
 // Backend wraps all methods required for mining. Only full node is capable
 // to offer all the functions here.
 type Backend interface {
 	BlockChain() *core.BlockChain
-	TxPool() TxPool
+	TxPool() *txpool.TxPool
 }
 
 // Config is the configuration parameters of mining.

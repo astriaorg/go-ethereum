@@ -62,7 +62,7 @@ import (
 // Deprecated: use ethconfig.Config instead.
 type Config = ethconfig.Config
 
-type TxPool = miner.TxPool
+type TxPool = *txpool.TxPool
 
 // Ethereum implements the Ethereum full node service.
 type Ethereum struct {
