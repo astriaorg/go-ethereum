@@ -11,7 +11,7 @@ make geth
 
 To run without mining (ie. using the conductor):
 ```bash
-./build/bin/geth --datadir ~/.astriageth/ --http --http.port=8545 --ws --ws.port=8545 --networkid=1337 --http.corsdomain='*' --ws.origins='*' --miner.threads 1 --miner.etherbase=0x46B77EFDFB20979E1C29ec98DcE73e3eCbF64102 --grpc --grpc.addr=localhost --grpc.port 50051
+./build/bin/geth --datadir ~/.astriageth/ --http --http.port=8545 --ws --ws.port=8545 --networkid=1337 --http.corsdomain='*' --ws.origins='*' --grpc --grpc.addr=localhost --grpc.port 50051
 ```
 
 4. Open up Metamask and go to the Localhost 8545 network. You should see your account has 300 ETH. You can now transfer this to other accounts.
