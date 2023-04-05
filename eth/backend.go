@@ -62,14 +62,12 @@ import (
 // Deprecated: use ethconfig.Config instead.
 type Config = ethconfig.Config
 
-type TxPool = *txpool.TxPool
-
 // Ethereum implements the Ethereum full node service.
 type Ethereum struct {
 	config *ethconfig.Config
 
 	// Handlers
-	txPool             TxPool
+	txPool             *txpool.TxPool
 	blockchain         *core.BlockChain
 	handler            *handler
 	ethDialCandidates  enode.Iterator
@@ -470,7 +468,7 @@ func (s *Ethereum) Miner() *miner.Miner { return s.miner }
 
 func (s *Ethereum) AccountManager() *accounts.Manager  { return s.accountManager }
 func (s *Ethereum) BlockChain() *core.BlockChain       { return s.blockchain }
-func (s *Ethereum) TxPool() TxPool                     { return s.txPool }
+func (s *Ethereum) TxPool() *txpool.TxPool             { return s.txPool }
 func (s *Ethereum) EventMux() *event.TypeMux           { return s.eventMux }
 func (s *Ethereum) Engine() consensus.Engine           { return s.engine }
 func (s *Ethereum) ChainDb() ethdb.Database            { return s.chainDb }
