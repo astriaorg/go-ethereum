@@ -59,7 +59,7 @@ jobs:
         with:
           context: .
           # It takes over 30 minutes to build the arm image right now, so we only build it on tags which is what we use for releases, or on merges to the default branch.
-          platforms: ${{ (contains(github.ref, 'refs/tags/') || github.ref == 'refs/heads/' + github.event.repository.default_branch) && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
+          platforms: ${{ (contains(github.ref, 'refs/tags/') || github.ref == join('refs/heads/', github.event.repository.default_branch)) && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
