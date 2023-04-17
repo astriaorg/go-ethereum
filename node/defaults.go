@@ -36,9 +36,14 @@ const (
 	DefaultGraphQLPort = 8547        // Default TCP port for the GraphQL server
 	DefaultAuthHost    = "localhost" // Default host interface for the authenticated apis
 	DefaultAuthPort    = 8551        // Default port for the authenticated apis
+
 	// grpc
 	DefaultGRPCHost = "[::1]" // Default host interface for the gRPC server
 	DefaultGRPCPort = 50051   // Default port for the gRPC server
+
+	// metro
+	DefaultMetroGRPCHost = "127.0.0.1" // Default host interface for the metro gRPC server
+	DefaultMetroGRPCPort = 9090        // Default port for the metro gRPC server
 )
 
 var (

@@ -1577,6 +1577,7 @@ func (s *TransactionAPI) GetTransactionCount(ctx context.Context, address common
 func (s *TransactionAPI) GetTransactionByHash(ctx context.Context, hash common.Hash) (*RPCTransaction, error) {
 	// Try to return an already finalized transaction
 	tx, blockHash, blockNumber, index, err := s.b.GetTransaction(ctx, hash)
+	log.Info("GetTransactionByHash", "tx", tx, "blockHash", blockHash, "blockNumber", blockNumber, "index", index, "err", err)
 	if err != nil {
 		return nil, err
 	}
@@ -1589,10 +1590,12 @@ func (s *TransactionAPI) GetTransactionByHash(ctx context.Context, hash common.H
 	}
 	// No finalized transaction, try to retrieve it from the pool
 	if tx := s.b.GetPoolTransaction(hash); tx != nil {
+		log.Info("Transaction found in pool", "hash", hash)
 		return NewRPCPendingTransaction(tx, s.b.CurrentHeader(), s.b.ChainConfig()), nil
 	}
 
 	// Transaction unknown, return as such
+	log.Info("Transaction not found", "hash", hash)
 	return nil, nil
 }
 
@@ -1694,12 +1697,19 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 		return common.Hash{}, errors.New("only replay-protected (EIP-155) transactions allowed over RPC")
 	}
 
+	// save transaction in geth mempool as well, so things like forge can look it up
+	if err := b.SendTx(ctx, tx); err != nil {
+		return common.Hash{}, err
+	}
+
 	// send to metro instead of eth mempool
 	txBytes, err := tx.MarshalBinary()
 	if err != nil {
 		return common.Hash{}, err
 	}
-	if err := submitMetroTransaction(txBytes); err != nil {
+	// FIXME - address should come from cli flags
+	metro_api := NewMetroAPI("192.167.10.40:9090")
+	if err := metro_api.SubmitTransaction(txBytes); err != nil {
 		return common.Hash{}, err
 	}
 
