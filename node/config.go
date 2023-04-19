@@ -195,11 +195,6 @@ type Config struct {
 	// GRPCPort is the TCP port number on which to start the gRPC server.
 	GRPCPort int `toml:",omitempty"`
 
-	// MetroGRPCHost is the address of the Metro grpc server.
-	MetroGRPCHost string `toml:",omitempty"`
-	// MetroGRPCPort is the port of the Metro grpc server.
-	MetroGRPCPort int `toml:",omitempty"`
-
 	// Logger is a custom logger to use with the p2p.Server.
 	Logger log.Logger `toml:",omitempty"`
 

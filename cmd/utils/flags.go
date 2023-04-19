@@ -813,15 +813,15 @@ var (
 
 	// Metro grpc address and port overrides
 	MetroGRPCHostFlag = &cli.StringFlag{
-		Name:     "metro.grpc.addr",
+		Name:     "metro.addr",
 		Usage:    "Metro gRPC server listening interface",
-		Value:    node.DefaultMetroGRPCHost,
+		Value:    ethconfig.Defaults.MetroGRPCHost,
 		Category: flags.APICategory,
 	}
 	MetroGRPCPortFlag = &cli.IntFlag{
-		Name:     "metro.grpc.port",
+		Name:     "metro.port",
 		Usage:    "Metro gRPC server listening port",
-		Value:    node.DefaultMetroGRPCPort,
+		Value:    ethconfig.Defaults.MetroGRPCPort,
 		Category: flags.APICategory,
 	}
 
@@ -1257,17 +1257,6 @@ func setGRPC(ctx *cli.Context, cfg *node.Config) {
 	}
 }
 
-// setMetro creates the Metro RPC listener interface string from the set command
-// line flags, returning empty if the Metro endpoint is disabled.
-func setMetro(ctx *cli.Context, cfg *node.Config) {
-	if ctx.IsSet(MetroGRPCHostFlag.Name) {
-		cfg.MetroGRPCHost = ctx.String(MetroGRPCHostFlag.Name)
-	}
-	if ctx.IsSet(MetroGRPCPortFlag.Name) {
-		cfg.MetroGRPCPort = ctx.Int(MetroGRPCPortFlag.Name)
-	}
-}
-
 // setGraphQL creates the GraphQL listener interface string from the set
 // command line flags, returning empty if the GraphQL endpoint is disabled.
 func setGraphQL(ctx *cli.Context, cfg *node.Config) {
@@ -1518,7 +1507,6 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 	setIPC(ctx, cfg)
 	setHTTP(ctx, cfg)
 	setGRPC(ctx, cfg)
-	setMetro(ctx, cfg)
 	setGraphQL(ctx, cfg)
 	setWS(ctx, cfg)
 	setNodeUserIdent(ctx, cfg)
@@ -1915,6 +1903,14 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		} else {
 			cfg.EthDiscoveryURLs = SplitAndTrim(urls)
 		}
+	}
+
+	// metro
+	if ctx.IsSet(MetroGRPCHostFlag.Name) {
+		cfg.MetroGRPCHost = ctx.String(MetroGRPCHostFlag.Name)
+	}
+	if ctx.IsSet(MetroGRPCPortFlag.Name) {
+		cfg.MetroGRPCPort = ctx.Int(MetroGRPCPortFlag.Name)
 	}
 
 	// Override any default configs for hard coded networks.

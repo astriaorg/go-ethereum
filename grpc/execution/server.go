@@ -92,7 +92,7 @@ func (s *ExecutionServiceServer) DoBlock(ctx context.Context, req *executionv1.D
 		return nil, fmt.Errorf("failed to insert block into blockchain (n=%d)", n)
 	}
 
-	// TODO - remove txs from original mempool
+	// remove txs from original mempool
 	for _, block := range blocks {
 		for _, tx := range block.Transactions() {
 			s.eth.TxPool().RemoveTx(tx.Hash())
