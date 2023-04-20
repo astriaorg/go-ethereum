@@ -40,10 +40,6 @@ const (
 	// grpc
 	DefaultGRPCHost = "[::1]" // Default host interface for the gRPC server
 	DefaultGRPCPort = 50051   // Default port for the gRPC server
-
-	// metro
-	DefaultMetroGRPCHost = "127.0.0.1" // Default host interface for the metro gRPC server
-	DefaultMetroGRPCPort = 9090        // Default port for the metro gRPC server
 )
 
 var (

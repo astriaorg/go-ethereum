@@ -93,10 +93,8 @@ func (s *ExecutionServiceServer) DoBlock(ctx context.Context, req *executionv1.D
 	}
 
 	// remove txs from original mempool
-	for _, block := range blocks {
-		for _, tx := range block.Transactions() {
-			s.eth.TxPool().RemoveTx(tx.Hash())
-		}
+	for _, tx := range block.Transactions() {
+		s.eth.TxPool().RemoveTx(tx.Hash())
 	}
 
 	newForkChoice := &engine.ForkchoiceStateV1{

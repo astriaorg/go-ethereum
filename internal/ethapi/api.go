@@ -1705,8 +1705,8 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 		return common.Hash{}, err
 	}
 
-	metro_api := NewMetroAPI(b.MetroGRPCEndpoint())
-	if err := metro_api.SubmitTransaction(txBytes); err != nil {
+	metroAPI := NewMetroAPI(b.MetroGRPCEndpoint())
+	if err := metroAPI.SubmitTransaction(txBytes); err != nil {
 		return common.Hash{}, err
 	}
 
