@@ -4,15 +4,18 @@ default:
 set dotenv-load
 set fallback
 
+# build a local geth binary
 build:
     make geth
 
+# initialize a local geth node
 init:
     ./build/bin/geth --db.engine pebble \
     --state.scheme=path \
     init geth-genesis-local.json
 
-run:
+# start a local geth node
+run: init
     ./build/bin/geth \
     --networkid=1337 \
     --http \
@@ -34,3 +37,5 @@ run:
 # this is specifically for mac os
 clean:
     rm -rf ~/Library/Ethereum/
+
+clean-restart: clean run
