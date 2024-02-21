@@ -11,13 +11,15 @@
         "istanbulBlock": 0,
         "berlinBlock": 0,
         "londonBlock": 0,
+        "shanghaiTime": 0,
         "terminalTotalDifficulty": 0,
         "terminalTotalDifficultyPassed": true,
         "ethash": {},
         "astriaOverrideGenesisExtraData": true,
         "astriaSequencerInitialHeight": 1,
-        "astriaDataAvailabilityInitialHeight": 1,
-        "astriaDataAvailabilityHeightVariance": 10
+        "astriaCelestiaInitialHeight": 1,
+        "astriaCelestiaHeightVariance": 50,
+        "astriaRollupName": "Astria"
     },
     "difficulty": "10000000",
     "gasLimit": "8000000",

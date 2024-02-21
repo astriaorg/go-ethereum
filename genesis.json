@@ -21,8 +21,9 @@
     "alloc": {
         "0x46B77EFDFB20979E1C29ec98DcE73e3eCbF64102": { "balance": "300000000000000000000" }
     },
-    "astriaOverrideGenesisExtraData": true,
     "astriaSequencerInitialHeight": 1,
-    "astriaDataAvailabilityInitialHeight": 1,
-    "astriaDataAvailabilityHeightVariance": 50
+    "astriaCelestiaInitialHeight": 1,
+    "astriaCelestiaHeightVariance": 50,
+    "astriaOverrideGenesisExtraData": true,
+    "astriaRollupName": "Astria"
 }
