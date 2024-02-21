@@ -79,6 +79,9 @@ func (s *ExecutionServiceServerV1Alpha2) GetGenesisInfo(ctx context.Context, req
 	log.Info("GetGenesisInfo called", "request", req)
 	getGenesisInfoRequestCount.Inc(1)
 
+	if s.bc.Config().AstriaRollupName == "" {
+		return nil, status.Error(codes.FailedPrecondition, "Rollup name not set")
+	}
 	rollupId := sha256.Sum256([]byte(s.bc.Config().AstriaRollupName))
 
 	res := &astriaPb.GenesisInfo{
