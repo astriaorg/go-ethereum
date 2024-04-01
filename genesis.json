@@ -19,7 +19,13 @@
     "difficulty": "10000000",
     "gasLimit": "8000000",
     "alloc": {
-        "0x46B77EFDFB20979E1C29ec98DcE73e3eCbF64102": { "balance": "300000000000000000000" }
+        "0x46B77EFDFB20979E1C29ec98DcE73e3eCbF64102": { "balance": "300000000000000000000" },
+        "0x0000000000000000000000000000000000001000": {
+            "balance": "0",
+            "storage": {
+                "0x00": "0x00000000000000000000000046B77EFDFB20979E1C29ec98DcE73e3eCbF64102"
+            }
+        }
     },
     "astriaOverrideGenesisExtraData": true,
     "astriaSequencerInitialHeight": 1,
