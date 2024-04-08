@@ -15,11 +15,11 @@
         "terminalTotalDifficulty": 0,
         "terminalTotalDifficultyPassed": true,
         "ethash": {},
-        "astriaRollupName": "astria",
+        "astriaRollupName": "Astria",
         "astriaOverrideGenesisExtraData": true,
         "astriaSequencerInitialHeight": 2,
         "astriaCelestiaInitialHeight": 2,
-        "astriaCelestiaHeightVariance": 10,
+        "astriaCelestiaHeightVariance": 50,
         "astriaBridgeAddresses": [],
         "astriaBridgeAllowedAssetDenom": "nria"
     },
@@ -27,10 +27,5 @@
     "gasLimit": "8000000",
     "alloc": {
         "0x46B77EFDFB20979E1C29ec98DcE73e3eCbF64102": { "balance": "300000000000000000000" }
-    },
-    "astriaSequencerInitialHeight": 1,
-    "astriaCelestiaInitialHeight": 1,
-    "astriaCelestiaHeightVariance": 50,
-    "astriaOverrideGenesisExtraData": true,
-    "astriaRollupName": "Astria"
+    }
 }
