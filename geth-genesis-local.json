@@ -17,8 +17,8 @@
         "ethash": {},
         "astriaBridgeAddresses": [],
         "astriaBridgeAllowedAssetDenom": "nria",
-        "astriaSequencerInitialHeight": 143363,
-        "astriaCelestiaInitialHeight": 1,
+        "astriaSequencerInitialHeight": 2,
+        "astriaCelestiaInitialHeight": 2,
         "astriaCelestiaHeightVariance": 50,
         "astriaOverrideGenesisExtraData": true,
         "astriaRollupName": "Astria"
