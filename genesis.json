@@ -14,7 +14,14 @@
         "shanghaiTime": 0,
         "terminalTotalDifficulty": 0,
         "terminalTotalDifficultyPassed": true,
-        "ethash": {}
+        "ethash": {},
+        "astriaRollupName": "astria",
+        "astriaOverrideGenesisExtraData": true,
+        "astriaSequencerInitialHeight": 2,
+        "astriaCelestiaInitialHeight": 2,
+        "astriaCelestiaHeightVariance": 10,
+        "astriaBridgeAddresses": [],
+        "astriaBridgeAllowedAssetDenom": "nria"
     },
     "difficulty": "10000000",
     "gasLimit": "8000000",

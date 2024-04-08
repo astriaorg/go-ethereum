@@ -5,12 +5,16 @@
 package execution
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
+	"math/big"
 	"sync"
 	"time"
 
+	primitivev1 "buf.build/gen/go/astria/astria/protocolbuffers/go/astria/primitive/v1"
 	astriaGrpc "buf.build/gen/go/astria/execution-apis/grpc/go/astria/execution/v1alpha2/executionv1alpha2grpc"
 	astriaPb "buf.build/gen/go/astria/execution-apis/protocolbuffers/go/astria/execution/v1alpha2"
 	"github.com/ethereum/go-ethereum/beacon/engine"
@@ -36,8 +40,14 @@ type ExecutionServiceServerV1Alpha2 struct {
 	eth *eth.Ethereum
 	bc  *core.BlockChain
 
-	commitementUpdateLock sync.Mutex // Lock for the forkChoiceUpdated method
-	blockExecutionLock    sync.Mutex // Lock for the NewPayload method
+	commitmentUpdateLock sync.Mutex // Lock for the forkChoiceUpdated method
+	blockExecutionLock   sync.Mutex // Lock for the NewPayload method
+
+	genesisInfoCalled        bool
+	getCommitmentStateCalled bool
+
+	bridgeAddresses      map[string]struct{}
+	bridgeAllowedAssetID [32]byte
 }
 
 var (
@@ -62,17 +72,50 @@ var (
 	commitmentStateUpdateTimer = metrics.GetOrRegisterTimer("astria/execution/commitment", nil)
 )
 
-func NewExecutionServiceServerV1Alpha2(eth *eth.Ethereum) *ExecutionServiceServerV1Alpha2 {
+func NewExecutionServiceServerV1Alpha2(eth *eth.Ethereum) (*ExecutionServiceServerV1Alpha2, error) {
 	bc := eth.BlockChain()
+
+	if bc.Config().AstriaRollupName == "" {
+		return nil, errors.New("rollup name not set")
+	}
+
+	if bc.Config().AstriaSequencerInitialHeight == 0 {
+		return nil, errors.New("sequencer initial height not set")
+	}
+
+	if bc.Config().AstriaCelestiaInitialHeight == 0 {
+		return nil, errors.New("celestia initial height not set")
+	}
+
+	if bc.Config().AstriaCelestiaHeightVariance == 0 {
+		return nil, errors.New("celestia height variance not set")
+	}
+
+	if bc.Config().AstriaBridgeAddresses == nil {
+		log.Warn("bridge addresses not set")
+	}
+
+	if bc.Config().AstriaBridgeAllowedAssetDenom == "" && bc.Config().AstriaBridgeAddresses != nil {
+		return nil, errors.New("bridge allowed asset denom not set")
+	}
+
+	bridgeAddresses := make(map[string]struct{})
+	for _, addr := range bc.Config().AstriaBridgeAddresses {
+		bridgeAddresses[string(addr)] = struct{}{}
+	}
+
+	bridgeAllowedAssetID := sha256.Sum256([]byte(bc.Config().AstriaBridgeAllowedAssetDenom))
 
 	if merger := eth.Merger(); !merger.PoSFinalized() {
 		merger.FinalizePoS()
 	}
 
 	return &ExecutionServiceServerV1Alpha2{
-		eth: eth,
-		bc:  bc,
-	}
+		eth:                  eth,
+		bc:                   bc,
+		bridgeAddresses:      bridgeAddresses,
+		bridgeAllowedAssetID: bridgeAllowedAssetID,
+	}, nil
 }
 
 func (s *ExecutionServiceServerV1Alpha2) GetGenesisInfo(ctx context.Context, req *astriaPb.GetGenesisInfoRequest) (*astriaPb.GenesisInfo, error) {
@@ -93,6 +136,7 @@ func (s *ExecutionServiceServerV1Alpha2) GetGenesisInfo(ctx context.Context, req
 
 	log.Info("GetGenesisInfo completed", "response", res)
 	getGenesisInfoSuccessCount.Inc(1)
+	s.genesisInfoCalled = true
 	return res, nil
 }
 
@@ -139,6 +183,13 @@ func (s *ExecutionServiceServerV1Alpha2) BatchGetBlocks(ctx context.Context, req
 	return res, nil
 }
 
+func protoU128ToBigInt(u128 *primitivev1.Uint128) *big.Int {
+	lo := big.NewInt(0).SetUint64(u128.Lo)
+	hi := big.NewInt(0).SetUint64(u128.Hi)
+	hi.Lsh(hi, 64)
+	return lo.Add(lo, hi)
+}
+
 // ExecuteBlock drives deterministic derivation of a rollup block from sequencer
 // block data
 func (s *ExecutionServiceServerV1Alpha2) ExecuteBlock(ctx context.Context, req *astriaPb.ExecuteBlockRequest) (*astriaPb.Block, error) {
@@ -151,6 +202,10 @@ func (s *ExecutionServiceServerV1Alpha2) ExecuteBlock(ctx context.Context, req *
 	executionStart := time.Now()
 	defer executeBlockTimer.UpdateSince(executionStart)
 
+	if !s.syncMethodsCalled() {
+		return nil, status.Error(codes.PermissionDenied, "Cannot execute block until GetGenesisInfo && GetCommitmentState methods are called")
+	}
+
 	// Validate block being created has valid previous hash
 	prevHeadHash := common.BytesToHash(req.PrevBlockHash)
 	softHash := s.bc.CurrentSafeBlock().Hash()
@@ -158,9 +213,54 @@ func (s *ExecutionServiceServerV1Alpha2) ExecuteBlock(ctx context.Context, req *
 		return nil, status.Error(codes.FailedPrecondition, "Block can only be created on top of soft block.")
 	}
 
+	txsToProcess := types.Transactions{}
+	for _, tx := range req.Transactions {
+		if deposit := tx.GetDeposit(); deposit != nil {
+			bridgeAddress := string(deposit.BridgeAddress)
+			if _, ok := s.bridgeAddresses[bridgeAddress]; !ok {
+				log.Debug("ignoring deposit tx from unknown bridge", "bridgeAddress", bridgeAddress)
+				continue
+			}
+
+			if !bytes.Equal(deposit.AssetId, s.bridgeAllowedAssetID[:]) {
+				log.Debug("ignoring deposit tx with disallowed asset ID", "assetID", deposit.AssetId)
+				continue
+			}
+
+			address := common.HexToAddress(deposit.DestinationChainAddress)
+			txdata := types.DepositTx{
+				From:  address,
+				Value: protoU128ToBigInt(deposit.Amount),
+				Gas:   0,
+			}
+
+			tx := types.NewTx(&txdata)
+			txsToProcess = append(txsToProcess, tx)
+		} else {
+			ethTx := new(types.Transaction)
+			err := ethTx.UnmarshalBinary(tx.GetSequencedData())
+			if err != nil {
+				log.Error("failed to unmarshal sequenced data into transaction, ignoring", "tx hash", sha256.Sum256(tx.GetSequencedData()), "err", err)
+				continue
+			}
+
+			if ethTx.Type() == types.DepositTxType {
+				log.Debug("ignoring deposit tx in sequenced data", "tx hash", sha256.Sum256(tx.GetSequencedData()))
+				continue
+			}
+
+			if ethTx.Type() == types.BlobTxType {
+				log.Debug("ignoring blob tx in sequenced data", "tx hash", sha256.Sum256(tx.GetSequencedData()))
+				continue
+			}
+
+			txsToProcess = append(txsToProcess, ethTx)
+		}
+	}
+
 	// This set of ordered TXs on the TxPool is has been configured to be used by
 	// the Miner when building a payload.
-	s.eth.TxPool().SetAstriaOrdered(req.Transactions)
+	s.eth.TxPool().SetAstriaOrdered(txsToProcess)
 
 	// Build a payload to add to the chain
 	payloadAttributes := &miner.BuildPayloadArgs{
@@ -229,6 +329,7 @@ func (s *ExecutionServiceServerV1Alpha2) GetCommitmentState(ctx context.Context,
 
 	log.Info("GetCommitmentState completed", "request", req, "response", res)
 	getCommitmentStateSuccessCount.Inc(1)
+	s.getCommitmentStateCalled = true
 	return res, nil
 }
 
@@ -240,8 +341,12 @@ func (s *ExecutionServiceServerV1Alpha2) UpdateCommitmentState(ctx context.Conte
 	commitmentUpdateStart := time.Now()
 	defer commitmentStateUpdateTimer.UpdateSince(commitmentUpdateStart)
 
-	s.commitementUpdateLock.Lock()
-	defer s.commitementUpdateLock.Unlock()
+	s.commitmentUpdateLock.Lock()
+	defer s.commitmentUpdateLock.Unlock()
+
+	if !s.syncMethodsCalled() {
+		return nil, status.Error(codes.PermissionDenied, "Cannot update commitment state until GetGenesisInfo && GetCommitmentState methods are called")
+	}
 
 	softEthHash := common.BytesToHash(req.CommitmentState.Soft.Hash)
 	firmEthHash := common.BytesToHash(req.CommitmentState.Firm.Hash)
@@ -338,4 +443,8 @@ func ethHeaderToExecutionBlock(header *types.Header) (*astriaPb.Block, error) {
 			Seconds: int64(header.Time),
 		},
 	}, nil
+}
+
+func (s *ExecutionServiceServerV1Alpha2) syncMethodsCalled() bool {
+	return s.genesisInfoCalled && s.getCommitmentStateCalled
 }
