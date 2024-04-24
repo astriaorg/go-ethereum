@@ -21,7 +21,7 @@
         "astriaCelestiaInitialHeight": 2,
         "astriaCelestiaHeightVariance": 50,
         "astriaOverrideGenesisExtraData": true,
-        "astriaRollupName": "Astria"
+        "astriaRollupName": "astriachain"
     },
     "difficulty": "10000000",
     "gasLimit": "8000000",
