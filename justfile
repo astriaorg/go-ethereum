@@ -34,8 +34,12 @@ run: init
     --db.engine=pebble \
     --state.scheme=path
 
-# this is specifically for mac os
+[macos]
 clean:
     rm -rf ~/Library/Ethereum/
+
+[linux]
+clean:
+    rm -rf ~/.ethereum/
 
 clean-restart: clean run
